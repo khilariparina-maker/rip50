@@ -1,0 +1,194 @@
+PRACTICAL NO 2 : Data Preprocessing 
+from sklearn.preprocessing import StandardScaler, LabelEncoder 
+col_names = [
+    "duration", "protocol_type", "service", "flag", "src_bytes",
+    "dst_bytes", "land", "wrong_fragment", "urgent", "hot",
+    "num_failed_logins", "logged_in", "num_compromised",
+    "root_shell", "su_attempted", "num_root", "num_file_creations",
+    "num_shells", "num_access_files", "num_outbound_cmds",
+    "is_host_login", "is_guest_login", "count", "srv_count",
+    "serror_rate", "srv_serror_rate", "rerror_rate",
+    "srv_rerror_rate", "same_srv_rate", "diff_srv_rate",
+    "srv_diff_host_rate", "dst_host_count", "dst_host_srv_count",
+    "dst_host_same_srv_rate", "dst_host_diff_srv_rate",
+    "dst_host_same_src_port_rate", "dst_host_srv_diff_host_rate",
+    "dst_host_serror_rate", "dst_host_srv_serror_rate",
+    "dst_host_rerror_rate", "dst_host_srv_rerror_rate",
+    "label", "difficulty_level"
+]
+
+df['target'] = df['label'].apply(lambda x: 0 if str(x).strip() == 'normal' else 1) 
+categorical_cols = df.select_dtypes(include=['object']).columns.tolist() 
+if 'label' in categorical_cols: 
+ categorical_cols.remove('label') 
+df_encoded = pd.get_dummies(df.drop(columns=['label']), columns=categorical_cols) 
+X = df_encoded.drop(columns=['target']) 
+y = df_encoded['target'] 
+scaler = StandardScaler() 
+X_scaled = pd.DataFrame(scaler.fit_transform(X), columns=X.columns) 
+print("Preprocessed Features Shape:", X_scaled.shape) 
+print("Normal (0) vs Attack (1) Counts:\n", y.value_counts()) 
+
+
+PRACTICAL NO 3 :- Features Selection 
+import pandas as pd  
+from sklearn.ensemble import RandomForestClassifier  
+from sklearn.feature_selection import SelectKBest, chi2  
+data = {  
+ 'duration': [0, 0, 2, 0, 5, 1, 0, 0],  
+ 'src_bytes': [181, 239, 235, 219, 217, 217, 0, 0],  
+ 'dst_bytes': [5450, 486, 1337, 1337, 2037, 2037, 0, 0],  
+ 'wrong_fragment': [0, 0, 0, 0, 0, 0, 3, 1],  
+ 'hot': [0, 0, 0, 0, 0, 0, 2, 0],  
+ 'label': [0, 0, 0, 0, 0, 0, 1, 1] # 0: Normal, 1: Attack  
+}  
+df = pd.DataFrame(data)  
+X = df.drop('label', axis=1)  
+y = df['label']  
+selector = SelectKBest(score_func=chi2, k=3)  
+X_new = selector.fit_transform(X, y)  
+print("Selected top 3 feature columns:", X.columns[selector.get_support()].tolist())  
+model = RandomForestClassifier(random_state=42)  
+model.fit(X, y)  
+importances = pd.Series(model.feature_importances_, index=X.columns)  
+print("\nFeature Importances:")  
+print(importances.sort_values(ascending=False)) 
+
+
+PRACTICAL NO 4 :- Supervised Learning classification
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score
+
+data = {
+    'duration': [0, 0, 2, 0, 5, 1, 0, 0, 0, 10],
+    'src_bytes': [181, 239, 235, 219, 217, 217, 0, 0, 0, 5000],
+    'dst_bytes': [5450, 486, 1337, 1337, 2037, 2037, 0, 0, 0, 0],
+    'wrong_fragment': [0, 0, 0, 0, 0, 0, 3, 1, 2, 0],
+    'label': [0, 0, 0, 0, 0, 0, 1, 1, 1, 1]
+}
+
+df = pd.DataFrame(data)
+
+X = df.drop('label', axis=1)
+y = df['label']
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.3, random_state=42
+)
+
+dt_model = DecisionTreeClassifier(random_state=42)
+dt_model.fit(X_train, y_train)
+dt_preds = dt_model.predict(X_test)
+
+knn_model = KNeighborsClassifier(n_neighbors=3)
+knn_model.fit(X_train, y_train)
+knn_preds = knn_model.predict(X_test)
+
+print(f"Decision Tree Accuracy: {accuracy_score(y_test, dt_preds) * 100:.2f}%")
+print(f"k-NN Accuracy: {accuracy_score(y_test, knn_preds) * 100:.2f}%")
+
+
+PRACTICAL NO 5 :- Model Evaluation 
+import pandas as pd
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, classification_report
+
+y_true = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]
+y_pred = [0, 0, 0, 0, 1, 1, 1, 1, 1, 0]
+
+acc = accuracy_score(y_true, y_pred)
+prec = precision_score(y_true, y_pred)
+rec = recall_score(y_true, y_pred)
+f1 = f1_score(y_true, y_pred)
+cm = confusion_matrix(y_true, y_pred)
+
+print("Confusion Matrix:")
+print(cm)
+print(f"\nAccuracy : {acc:.2f}")
+print(f"Precision: {prec:.2f}")
+print(f"Recall   : {rec:.2f}")
+print(f"F1-Score : {f1:.2f}")
+print("\nFull Classification Report:")
+print(classification_report(y_true, y_pred, target_names=['Normal', 'Attack']))
+
+PRACTICAL NO 6 :- Unsupervised Learning – Anomaly Detection 
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import IsolationForest
+np.random.seed(42)
+normal_traffic = np.random.normal(loc=50, scale=5, size=(100, 2))
+anomalous_traffic = np.random.uniform(low=100, high=200, size=(10, 2))
+X = np.vstack([normal_traffic, anomalous_traffic])
+df = pd.DataFrame(X, columns=['bytes_sent', 'packets_per_sec'])
+iso_forest = IsolationForest(contamination=0.1, random_state=42)
+df['anomaly_score'] = iso_forest.fit_predict(
+    df[['bytes_sent', 'packets_per_sec']]
+)
+df['status'] = df['anomaly_score'].map({1: 'Normal', -1: 'Anomaly'})
+anomalies = df[df['status'] == 'Anomaly']
+print(f"Total Anomalies Detected: {len(anomalies)}")
+print("\nSample Detected Anomalous Traffic:")
+print(anomalies.head())
+
+PRACTICAL NO 7 :- Intrusion Detection Simulation 
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+train_logs = pd.DataFrame({
+    'port': [80, 443, 22, 23, 80, 443, 3389],
+    'packet_size': [500, 1200, 60, 40, 450, 1500, 80],
+    'failed_logins': [0, 0, 5, 12, 0, 0, 8],
+    'label': [
+        'Normal', 'Normal', 'SSH_Bruteforce',
+        'Telnet_Attack', 'Normal', 'Normal',
+        'RDP_Bruteforce'
+    ]
+})
+X_train = train_logs[['port', 'packet_size', 'failed_logins']]
+y_train = train_logs['label']
+ids_model = RandomForestClassifier(random_state=42)
+ids_model.fit(X_train, y_train)
+incoming_stream = [
+    {'port': 80, 'packet_size': 510, 'failed_logins': 0},
+    {'port': 22, 'packet_size': 65, 'failed_logins': 6},
+    {'port': 3389, 'packet_size': 90, 'failed_logins': 10}
+]
+print("--- REAL-TIME IDS ALERT MONITORING ---")
+for idx, packet in enumerate(incoming_stream, 1):
+    packet_df = pd.DataFrame([packet])
+    prediction = ids_model.predict(packet_df)[0]
+    if prediction == 'Normal':
+        status = "[INFO] ALLOW: Traffic Normal"
+    else:
+        status = f"[ALERT] BLOCK: Threat Detected -> {prediction}"
+    print(f"Packet #{idx} (Port: {packet['port']}) => {status}")
+
+
+PRACTICAL NO 8  :- Malware Feature Analysis 
+import pandas as pd
+from sklearn.tree import DecisionTreeClassifier, export_text
+malware_data = {
+    'file_size_kb': [150, 4500, 320, 210, 5000, 180, 4200, 290],
+    'has_crypto_api': [0, 1, 0, 0, 1, 0, 1, 0],
+    'unusual_section_names': [0, 1, 0, 0, 1, 0, 1, 0],
+    'network_calls': [1, 25, 2, 0, 30, 1, 18, 0],
+    'is_malware': [0, 1, 0, 0, 1, 0, 1, 0]
+}
+df = pd.DataFrame(malware_data)
+X = df[['file_size_kb', 'has_crypto_api', 'unusual_section_names', 'network_calls']]
+y = df['is_malware']
+clf = DecisionTreeClassifier(max_depth=3, random_state=42)
+clf.fit(X, y)
+rules = export_text(clf, feature_names=list(X.columns))
+print("--- MALWARE DETECTION DECISION RULES ---")
+print(rules)
+unknown_file = pd.DataFrame([{
+    'file_size_kb': 4100,
+    'has_crypto_api': 1,
+    'unusual_section_names': 1,
+    'network_calls': 20
+}])
+prediction = clf.predict(unknown_file)[0]
+verdict = "MALICIOUS (Malware)" if prediction == 1 else "BENIGN (Safe)"
+print(f"\nAnalysis Verdict for Unknown Sample: {verdict}")
